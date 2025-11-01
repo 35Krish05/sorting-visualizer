@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorting Visualizer - Animated</title>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .controls {
+      background-color: rgba(255,255,255,0.15);
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+      backdrop-filter: blur(8px);
+    }
+
+    input, select, button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      margin: 8px;
+      font-size: 1rem;
+    }
+
+    input {
+      width: 220px;
+      outline: none;
+      border: 1px solid #ccc;
+    }
+
+    select {
+      background: #fff;
+      color: #333;
+    }
+
+    button {
+      background: #4e54c8;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #363dc2;
+      transform: scale(1.05);
+    }
+
+    #arrayContainer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 300px;
+      margin-top: 40px;
+      width: 80%;
+      max-width: 800px;
+      border-radius: 8px;
+      background-color: rgba(255,255,255,0.1);
+      padding: 10px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+      overflow: hidden; /* ensures bars stay inside */
+    }
+
+    .bar {
+      flex: 1;
+      margin: 0 4px;
+      background: linear-gradient(180deg, #00c6ff, #0072ff);
+      color: #fff;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.2s ease, background 0.3s ease;
+    }
+
+    .bar:hover {
+      background: linear-gradient(180deg, #ff9966, #ff5e62);
+    }
+
+    footer {
+      margin-top: 50px;
+      font-size: 0.9rem;
+      color: #e0e0e0;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Sorting Visualizer (Animated)</h1>
+  <div class="controls">
+    <input type="text" id="numbers" placeholder="e.g. 22,30,99,100,50,22,26">
+    <select id="sortType">
+      <option value="bubble">Bubble Sort</option>
+      <option value="selection">Selection Sort</option>
+      <option value="insertion">Insertion Sort</option>
+    </select>
+    <button onclick="sortNumbers()">Sort via Backend</button>
+  </div>
+
+  <div id="arrayContainer"></div>
+
+  <footer>Created by Krish Patel ✨</footer>
+
+  <script>
+    async function sortNumbers() {
+      const numbersInput = document.getElementById("numbers").value.trim();
+      const sortType = document.getElementById("sortType").value;
+      const numbers = numbersInput.split(',').map(Number).filter(n => !isNaN(n));
+
+      if (numbers.length === 0) {
+        alert("Please enter valid numbers separated by commas.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8082/api/sort/${sortType}`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(numbers)
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const steps = await response.json();
+        animateSteps(steps);
+      } catch (error) {
+        alert("Error connecting to backend. Make sure Spring Boot is running.\n" + error);
+      }
+    }
+
+    function animateSteps(steps) {
+      const container = document.getElementById("arrayContainer");
+      const containerHeight = container.clientHeight; // dynamic height
+      const maxVal = Math.max(...steps.flat()); // largest number in all steps
+      let i = 0;
+
+      function draw(step) {
+        container.innerHTML = "";
+        step.forEach(value => {
+          const bar = document.createElement("div");
+          bar.classList.add("bar");
+          const heightPercent = (value / maxVal) * 100;
+          bar.style.height = (heightPercent * containerHeight / 100) + "px";
+          bar.innerText = value;
+          container.appendChild(bar);
+        });
+      }
+
+      function nextStep() {
+        if (i < steps.length) {
+          draw(steps[i]);
+          i++;
+          setTimeout(nextStep, 50);
+        }
+      }
+      nextStep();
+    }
+  </script>
+</body>
+</html>
